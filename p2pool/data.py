@@ -177,6 +177,7 @@ class Share(object):
           assert total_weight == sum(weights.itervalues()) + donation_weight, (total_weight, sum(weights.itervalues()) + donation_weight)
         
         worker_payout = share_data['subsidy']
+        print "Payment Info: amount=%i Total" % (share_data['subsidy'])
         
         payments = share_data['packed_payments']
         payments_tx = []
@@ -184,6 +185,7 @@ class Share(object):
             for obj in payments:
                 pm_script = dash_data.address_to_script2(obj['payee'],net.PARENT)
                 pm_payout = obj['amount']
+                print "Payment Info: amount=%i Payee=%s" % (obj['amount'], obj['payee'])
                 if pm_payout > 0:
                     payments_tx += [dict(value=pm_payout, script=pm_script)]
                     worker_payout -= pm_payout
@@ -195,6 +197,7 @@ class Share(object):
         else:
           amounts = {this_script: worker_payout, DONATION_SCRIPT: 0}
           #amounts[this_script] = worker_payout
+        print "Payment Info: amount=%i Workers" % (worker_payout)
 
         amounts[DONATION_SCRIPT] = amounts.get(DONATION_SCRIPT, 0) + worker_payout - sum(amounts.itervalues()) # all that's left over is the donation weight and some extra satoshis due to rounding
         
@@ -205,6 +208,7 @@ class Share(object):
         worker_tx=[dict(value=amounts[script], script=script) for script in worker_scripts if amounts[script]]
         
         donation_tx = [dict(value=amounts[DONATION_SCRIPT], script=DONATION_SCRIPT)]
+        print "Payment Info: amount=%i Donation" % (amounts[DONATION_SCRIPT])
         
         share_info = dict(
             share_data=share_data,
