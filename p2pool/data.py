@@ -148,8 +148,8 @@ class Share(object):
             else:
                 if known_txs is not None:
                     this_size = dash_data.tx_type.packed_size(known_txs[tx_hash])
-                    if new_transaction_size + this_size > 50000: # only allow 50 kB of new txns/share
-                        break
+                    #if new_transaction_size + this_size > 50000: # only allow 50 kB of new txns/share
+                    #    break
                     new_transaction_size += this_size
                     all_transaction_size += this_size
                 new_transaction_hashes.append(tx_hash)
@@ -405,9 +405,11 @@ class Share(object):
             if all_txs_size > 2000000:
                 return True, 'txs over block size limit'
             
+            '''
             new_txs_size = sum(dash_data.tx_type.packed_size(known_txs[tx_hash]) for tx_hash in self.share_info['new_transaction_hashes'])
             if new_txs_size > 50000:
                 return True, 'new txs over limit'
+            '''
         
         return False, None
     
