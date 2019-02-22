@@ -13,8 +13,8 @@ def check(dashd, net):
     if not (yield net.PARENT.RPC_CHECK(dashd)):
         print >>sys.stderr, "    Check failed! Make sure that you're connected to the right dashd with --dashd-rpc-port!"
         raise deferral.RetrySilentlyException()
-    if not net.VERSION_CHECK((yield dashd.rpc_getinfo())['version']):
-        print >>sys.stderr, '    dash version too old! Upgrade to 0.12.1.0 or newer!'
+    if not net.VERSION_CHECK((yield dashd.rpc_getnetworkinfo())['version']):
+        print >>sys.stderr, '    dash version too old! Upgrade to 0.12.2.0 or newer!'
         raise deferral.RetrySilentlyException()
 
 @deferral.retry('Error getting work from dashd:', 3)
@@ -51,21 +51,28 @@ def getwork(dashd, net, use_getblocktemplate=True):
     # Dash Payments
     packed_payments = []
     payment_amount = 0
-    if 'payee' in work['masternode']:
+
+    payment_objects = []
+    if 'masternode' in work:
+        if isinstance(work['masternode'], list):
+            payment_objects += work['masternode']
+        else:
+            payment_objects += [work['masternode']]
+    if 'superblock' in work:
+        payment_objects += work['superblock']
+
+    for obj in payment_objects:
         g={}
-        g['payee']=str(work['masternode']['payee'])
-        g['amount']=work['masternode']['amount']
-        if g['amount'] > 0:
-            payment_amount += g['amount']
-            packed_payments.append(g)
-    elif work['superblock']:
-        for obj in work['superblock']:
-                g={}
-                g['payee']=str(obj['payee'])
-                g['amount']=obj['amount']
-                if g['amount'] > 0:
-                    payment_amount += g['amount']
-                    packed_payments.append(g)
+        if 'payee' in obj:
+            g['payee'] = str(obj['payee'])
+            g['amount'] = obj['amount']
+            if g['amount'] > 0:
+                payment_amount += g['amount']
+                packed_payments.append(g)
+
+    coinbase_payload = None
+    if 'coinbase_payload' in work and len(work['coinbase_payload']) != 0:
+        coinbase_payload = work['coinbase_payload'].decode('hex')
 
     defer.returnValue(dict(
         version=work['version'],
@@ -83,6 +90,7 @@ def getwork(dashd, net, use_getblocktemplate=True):
         latency=end - start,
         payment_amount = payment_amount,
         packed_payments = packed_payments,
+        coinbase_payload = coinbase_payload,
     ))
 
 @deferral.retry('Error submitting primary block: (will retry)', 10, 10)
